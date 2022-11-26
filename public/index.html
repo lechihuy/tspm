@@ -2,7 +2,7 @@
   <!DOCTYPE html>
   <html lang="en">
   <body>
-  <script src="https://unpkg.com/gojs@2.2.16/release/go.js"></script>
+  <script src="js/go.js"></script>
   <div id="allSampleContent" class="p-4 w-full">
     <script id="code">
     function init() {
@@ -49,7 +49,7 @@
               { row: 0, column: 1, margin: 5, textAlign: "center" }),
             $(go.TextBlock,  // earlyFinish
               new go.Binding("text", "",
-                d => (d.earlyStart + d.length).toFixed(2)),
+                d => (d.earlyStart + d.length)),
               { row: 0, column: 2, margin: 5, textAlign: "center" }),
 
             $(go.TextBlock,
@@ -61,11 +61,11 @@
 
             $(go.TextBlock,  // lateStart
               new go.Binding("text", "",
-                d => (d.lateFinish - d.length).toFixed(2)),
+                d => (d.lateFinish - d.length)),
               { row: 2, column: 0, margin: 5, textAlign: "center" }),
             $(go.TextBlock,  // slack
               new go.Binding("text", "",
-                d => (d.lateFinish - (d.earlyStart + d.length)).toFixed(2)),
+                d => (d.lateFinish - (d.earlyStart + d.length))),
               { row: 2, column: 1, margin: 5, textAlign: "center" }),
             $(go.TextBlock, // lateFinish
               new go.Binding("text", "lateFinish"),

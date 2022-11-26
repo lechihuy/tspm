@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        * { margin: 0; padding: 0; }
+    </style>
+</head>
+<body>
+    <div style="padding: 20px;">
+        <p>Công việc:</p>
+        <p>Tên|Phụ thuộc|Ngày thực hiện|Chi phí dự tính|Chi phí thực tế|Tiến độ hoàn thành</p>
+        <pre>
+A||4|4000|3000|100
+B|A|3|3000|2000|100
+C|B|5|6000|5500|90
+D|B|9|12000|9000|70
+E|B|4|3500|1800|70
+F|D|5|6000|0|0
+        </pre>
+        <textarea id="tasks" cols="30" rows="10"></textarea>
+
+        <br><br>
+        <p>Thời gian ước tính hoàn thành dự án:</p>
+        <input type="text" id="project-estimate-time">
+
+        <br><br>
+        <p>Số chữ số sau dấu phẩy làm tròn:</p>
+        <input type="text" id="fixed">
+
+        <br><br>
+        <button type="button" id="calc">Tính</button>
+        <br><br>
+        
+        <div id="result" style="display: none;">
+            <hr>
+            <br><br>
+            <h3>Giải</h3>
+            <br>
+            <p>Ngân sách dự án</p>
+            <p id="bac"></p>
+            <br>
+            <p>Giá trị dự tính</p>
+            <p id="pv"></p>
+            <br>
+            <p>Giá trị thu được</p>
+            <p id="ev"></p>
+            <br>
+            <p>Chi phí thực sự</p>
+            <p id="ac"></p>
+            <br>
+            <p>Chi phí phát sinh</p>
+            <p id="cv"></p>
+            <br>
+            <p>Biến động lịch</p>
+            <p id="sv"></p>
+            <br>
+            <p>Chỉ số thực hiện chi phí</p>
+            <p id="cpi"></p>
+            <br>
+            <p>Chỉ số thực hiện lịch</p>
+            <p id="spi"></p>
+            <br>
+            <p>Ước tính tại thời điểm hoàn tất</p>
+            <p id="eac"></p>
+            <br>
+            <p>Số tiền cần thêm để hoàn thành dự án là</p>
+            <p id="moneyToComplete"></p>
+            <br>
+            <p>Số ngày cần thêm để hoàn thành dự án là</p>
+            <p id="timeToComplete"></p>
+            <br>
+            <p>
+                Tình trạng dự án:
+                <ul id="status" style="margin-left: 20px;"></ul>
+            </p>
+        </div>
+    </div>
+
+    <script src="js/jquery.js"></script>
+    <script id="MathJax-script" async src="js/mathjax/tex-chtml-full.js"></script>
+    <script>
+        let fixed = null
+        
+        function rounded(number) {
+            return fixed ? number.toFixed(fixed) : number
+        }
+        
+        $('#calc').on('click', () => {
+            $('#result').show()
+
+            fixed = $('#fixed').val().trim()
+
+            const tasks = $('#tasks').val().trim().split('\n').map(task => {
+                task = task.split('|')
+                return {
+                    key: task[0],
+                    dependencies: task[1] ? task[1].split(',') : [],
+                    duration: parseInt(task[2]),
+                    pv: parseFloat(task[3]),
+                    cost: parseFloat(task[4] ?? '0'), 
+                    progress: parseInt(task[5]) / 100
+                }
+            })
+            let BAC = tasks.reduce((sum, task) => sum + task.pv, 0)
+            let PV = tasks.reduce((sum, task) => task.progress > 0 ? sum + task.pv : sum, 0)
+            let EV = tasks.reduce((sum, task) => sum + task.pv * task.progress, 0)
+            let AC = tasks.reduce((sum, task) => task.progress > 0 ? sum + task.cost : sum, 0)
+            let CPI = rounded(EV / AC)
+            let SPI = rounded(EV / PV)
+            let CV = EV - AC
+            let SV = EV - PV 
+            let EAC = rounded(BAC / CPI)
+            let projectEstimateTime = $('#project-estimate-time').val()
+            let moneyToComplete = rounded(EAC - AC)
+            let timeToComplete = rounded(projectEstimateTime / SPI)
+
+            $('#bac').text(`\\( BAC = ${ Array.from(tasks).map(task => task.pv).join(' \+ ') } = ${BAC} \\)`)
+            $('#pv').text(`\\( PV = ${ Array.from(tasks).filter(task => task.progress > 0).map(task => task.pv).join(' \+ ') } = ${PV} \\)`)
+            $('#ev').text(`\\( EV = ${ Array.from(tasks).filter(task => task.progress > 0).map(task => `${task.pv} \\times ${task.progress * 100}\\%`).join(' \+ ') } = ${EV} \\)`)
+            $('#ac').text(`\\( AC = ${ Array.from(tasks).filter(task => task.progress > 0).map(task => task.cost).join(' \+ ') } = ${AC} \\)`)
+            $('#cpi').text(`\\( CPI = \\frac{EV}{AC} = \\frac{${EV}}{${AC}} = ${CPI}\\)`)
+            $('#spi').text(`\\( SPI = \\frac{EV}{PV} = \\frac{${EV}}{${PV}} = ${SPI}\\)`)
+            $('#cv').text(`\\( CV = EV - AC = ${EV} - ${AC} = ${CV}\\)`)
+            $('#sv').text(`\\( SV = EV - PV = ${EV} - ${PV} = ${SV}\\)`)
+            $('#eac').text(`\\( EAC = \\frac{BAC}{CPI} = \\frac{${BAC}}{${CPI}} = ${EAC}\\)`)
+            $('#moneyToComplete').text(`\\( EAC - AC = ${EAC} - ${AC} = ${moneyToComplete}\\)`)
+            $('#timeToComplete').text(`\\( \\frac{${projectEstimateTime}}{SPI} = \\frac{${projectEstimateTime}}{${SPI}} = ${timeToComplete}\\)`)
+            $('#status').html(
+                (CPI >= 1 ? '<li>\\( CPI >= 1 \\) nên dự án đang sử dụng hiệu quả chi phí</li>' : `<li>\\( CPI < 1 \\) nên dự án đang sử dụng vượt ngân sách</li>`) + 
+                (SPI >= 1 ? '<li>\\( SPI >= 1 \\) nên dự án đang hoàn thành đúng tiến độ</li>' : `<li>\\( SPI < 1 \\) nên dự án đang chậm tiến độ</li>`)  
+            )
+            MathJax.texReset();
+            MathJax.typeset();
+        })
+    </script>
+</body>
+</html>
