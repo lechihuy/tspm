@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NPV</title>
+    <style>
+        * { margin: 0; padding: 0; }
+    </style>
+</head>
+<body>
+    <div style="padding: 20px;">
+        <p>Dự án|Số tiền đầu tư ban đầu|Dòng tiền</p>
+        <pre>
+A|100000|20000,33000,39000,72000
+B|150000|32000,41000,78000,90000
+        </pre>
+        <textarea id="projects" cols="30" rows="10"></textarea>
+
+        <br><br>
+        <p>Lãi suất kỳ vọng của doanh nghiệp (k)</p>
+        <input type="text" id="k">
+
+        <br><br>
+        <p>Lạm phát ước tính (\(P_t\))</p>
+        <input type="text" id="p_t">
+
+        <br><br>
+        <button type="button" id="calc">Tính</button>
+        <br><br>
+
+        <div id="result" style="display: none;">
+            <hr>
+            <br><br>
+            <h3>Giải (kết quả word)</h3>
+            <br>
+            <p id="npvs"></p>
+            <p class="compare"></p>
+            <br><br>
+            <hr>
+            <br><br>
+            <h3>Giải (kết quả text)</h3>
+            <br>
+            <p id="npvs_text"></p>
+            <p class="compare"></p>
+        </div>
+    </div>
+
+    <script src="js/jquery.js"></script>
+    <script id="MathJax-script" async src="js/mathjax/tex-chtml-full.js"></script>
+
+    <script>
+        let fixed = 2
+        
+        function rounded(number) {
+            return fixed ? number.toFixed(fixed) : number
+        }
+
+        $('#calc').on('click', () => {
+            $('#result').show();
+
+            const k = parseFloat($('#k').val().trim() ?? '0') / 100
+            const p_t = parseFloat($('#p_t').val().trim() ?? '0') / 100
+            const projects = $('#projects').val().trim().split('\n').map(project => {
+                project = project.split('|')
+                return {
+                    key: project[0],
+                    invest: parseFloat(project[1]),
+                    cashflows: (project[2] ? project[2].split(',') : []).map(cashflow => parseFloat(cashflow ?? '0')),
+                    npv: 0,
+                }
+            })
+            let npvs = ''
+            let npvs_text = ''
+
+            projects.map((project) => {
+                project.npv += -1 * project.invest
+
+                for (let i = 0; i < project.cashflows.length; i++) {
+                    project.npv += (project.cashflows[i]) / Math.pow(1 + k + p_t, i + 1)
+                }
+
+                project.npv = rounded(project.npv)
+
+                npvs += `\\( NPV_${project.key} = -${ project.invest } + ${ Array.from(project.cashflows).map((cashflow, i) => {
+                    return ` \\frac{${ cashflow }}{\(1 + ${ k } + ${ p_t } \)^${i + 1}} `
+                }).join(' \+ ') } = ${project.npv} \\) <br><br> `
+
+                npvs_text += `NPV của dự án ${ project.key } = -${ project.invest } + ${ Array.from(project.cashflows).map((cashflow, i) => {
+                    return ` ${ cashflow } / (1 + ${ k } + ${ p_t } )^${i + 1} `
+                }).join(' \+ ') } = ${project.npv} <br><br> `
+            })
+
+            $('#npvs').html(npvs)
+            $('#npvs_text').html(npvs_text)
+
+            if (projects.length == 2) {
+                if (projects[0].npv > projects[1].npv) {
+                    $('.compare').text(`Nên đầu tư vào dự án ${projects[0].key} do có NPV lớn hơn`)
+                } else {
+                    $('.compare').text(`Nên đầu tư vào dự án ${projects[1].key} do có NPV lớn hơn`)
+                }
+            }
+
+            MathJax.texReset();
+            MathJax.typeset();
+        })
+    </script>
+</body>
+</html>

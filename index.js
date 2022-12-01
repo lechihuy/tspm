@@ -57,7 +57,7 @@ async function resolvePert() {
         })
 
         if (predecessors.length < 1) {
-            tasks[i].lateFinish = tasks[i].earlyFinish
+            tasks[i].lateFinish = Math.max(...tasks.map(task => task.earlyFinish));
         } else if (predecessors.length === 1) {
             tasks[i].lateFinish = predecessors[0].lateStart
         } else if (predecessors.length > 1) {
@@ -89,7 +89,6 @@ async function saveTasks() {
 }
 
 async function exportChartData() {
-    console.log(tasks);
     const nodes = tasks.map((task, index) => ({
         key: index + 2,
         text: task.task,
